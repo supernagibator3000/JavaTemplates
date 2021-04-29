@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+task createJar(type: Copy){
+    from jar {
+        manifest {
+            attributes 'Main-Class': "App"
+        }
+        from {
+            configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        }
+    }
+    into "./Docker"
+
+    doLast {
+        println "Jar file has been created"
+    }
+
+    finalizedBy{
+        createDockerContainer
+    }
+}
+
+task createDockerContainer (type: Exec){
+    commandLine "cd", "./Docker"
+    commandLine "docker", "build", "-t", "${project.name}:${project.version}", "./Docker"
+
+    doLast{
+        println "Docker container has been created"
+    }
+
+    finalizedBy{
+        runDockerContainer
+    }
+}
+
+task runDockerContainer (type: Exec){
+    commandLine "docker", "run", "--name", "pr9","${project.name}:${project.version}"
+
+    doLast{
+        println "Docker container running has been finished"
+    }
+}
